@@ -84,15 +84,21 @@ async function readGit($: EngineInterface, root: string, project: Project): Prom
 async function readCluster($: EngineInterface, context: string): Promise<Cluster> {
   try {
     const run = await $.process.run(
-      ['kubectl', '--context', context, 'get', 'pods', '-A', '--no-headers'],
+      ['kubectl', '--context', context, 'get', 'pods', '-o', 'json'],
       { timeoutMs: 20_000 },
     )
     if (run.exitCode !== 0) {
       const message = run.stderr.trim().split('\n')[0] ?? `exit ${run.exitCode}`
       return { state: 'error', message: message.slice(0, 120) }
     }
-    const pods = run.stdout.split('\n').filter(line => line.trim() !== '')
-    const running = pods.filter(line => /\s(Running|Completed)\s/.test(line)).length
+    const result = JSON.parse(run.stdout) as { items: Array<{
+      metadata?: { deletionTimestamp?: string }
+      status?: { phase?: string; conditions?: Array<{ type: string; status: string }> }
+    }> }
+    const pods = result.items.filter(pod => !pod.metadata?.deletionTimestamp)
+    const running = pods.filter(pod => pod.status?.phase === 'Succeeded' ||
+      (pod.status?.phase === 'Running' &&
+        pod.status.conditions?.some(condition => condition.type === 'Ready' && condition.status === 'True'))).length
     return { state: 'ok', running, total: pods.length }
   } catch (error) {
     return { state: 'error', message: String(error).slice(0, 120) }
@@ -226,7 +232,7 @@ function isLive(p: Project): boolean {
 function health(p: Project): Health {
   if (p.cluster.state === 'error' || p.site.state === 'error') return 'bad'
   if (p.site.state === 'ok' && p.site.status >= 500) return 'bad'
-  if (p.cluster.state === 'ok' && p.cluster.running < p.cluster.total) return 'warn'
+  if (p.cluster.state === 'ok' && (p.cluster.total === 0 || p.cluster.running < p.cluster.total)) return 'warn'
   if (p.site.state === 'ok' && p.site.status >= 400) return 'warn'
   if ((p.behind ?? 0) > 0) return 'warn'
   if (isLive(p)) return 'ok'

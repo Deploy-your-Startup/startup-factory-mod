@@ -30,9 +30,14 @@ projects:
   - name: about-phil
     repo: git@github.com:philipp-lein/about-phil.git
     deployed: true                         # card in the "Live" section
-    kubectl_context: about-phil-production # pod check
+    kubectl_context: about-phil-production # pod check in this context’s namespace
     url: aboutphil.de                      # website check + link
 ```
+
+Pod checks use the namespace configured in each Kubernetes context (or `default`
+when none is configured). Startups sharing a cluster need separate contexts with
+their own namespaces. Only Ready pods and completed jobs count as healthy; an
+empty namespace is shown as needing attention.
 
 ## Develop
 

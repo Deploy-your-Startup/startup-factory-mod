@@ -27,7 +27,10 @@ function run(argv: string) {
   }
   if (argv.includes('log')) return { ...RUN, exitCode: 0, stdout: `${(1_000 - 3 * 3_600_000) / 1000}\tAdd blog\n`, stderr: '' }
   if (argv.startsWith('kubectl')) {
-    return { ...RUN, exitCode: 0, stdout: 'web  app-1  1/1  Running  0  1d\nweb  job-1  0/1  Error  0  1d\n', stderr: '' }
+    return { ...RUN, exitCode: 0, stdout: JSON.stringify({ items: [
+      { status: { phase: 'Running', conditions: [{ type: 'Ready', status: 'True' }] } },
+      { status: { phase: 'Failed' } },
+    ] }), stderr: '' }
   }
   return { ...RUN, exitCode: 1, stdout: '', stderr: 'unexpected' }
 }
@@ -63,4 +66,50 @@ test('the pane lists startups with git and cluster state', async ($, on) => {
     expect(await ui.find({ type: 'Text', text: /200 · 0 ms/ })).toBeDefined()
     await ui.unmount()
   }
+})
+
+
+test('shared-cluster cards check their own contexts and report readiness', async ($, on) => {
+  mock.clock(on, { now: 1_000 })
+  on('session.root', () => ({ value: ROOT }))
+  on('session.cwd', () => ({ value: ROOT }))
+  on('fs.exists', (_, e) => ({ value: e.path === `${ROOT}/projects.yaml` }))
+  on('fs.read', () => ({ value: `projects:
+  - name: cluster-a
+    deployed: true
+    kubectl_context: cluster-a-production
+  - name: cluster-b
+    deployed: true
+    kubectl_context: cluster-b-production
+  - name: empty-startup
+    deployed: true
+    kubectl_context: empty-production
+` }))
+  on('ui.status', () => ({ value: undefined }))
+  const checked = new Set<string>()
+  on('process.run', (_, e) => {
+    expect(e.argv[0]).toBe('kubectl')
+    expect(e.argv).not.toContain('-A')
+    expect(e.argv.slice(3)).toEqual(['get', 'pods', '-o', 'json'])
+    const context = e.argv[2]!
+    checked.add(context)
+    const items = context === 'cluster-a-production' ? [
+      { status: { phase: 'Running', conditions: [{ type: 'Ready', status: 'True' }] } },
+      { status: { phase: 'Succeeded' } },
+      { metadata: { deletionTimestamp: '2026-10-08T00:00:00Z' }, status: { phase: 'Running' } },
+    ] : context === 'cluster-b-production' ? [
+      { status: { phase: 'Running', conditions: [{ type: 'Ready', status: 'False' }] } },
+    ] : []
+    return { value: { ...RUN, exitCode: 0, stdout: JSON.stringify({ items }), stderr: '' } }
+  })
+  const ui = await $.ui.mount({ plugin: 'startup-factory', surface: 'terminal', ...PANE,
+    props: { title: 'Startup Factory', isFocused: false, bodyColumns: 60, placement: 'dock' } as never })
+  await ui.press({ key: 'refresh' })
+  await ui.press({ key: 'clusters' })
+  expect([...checked].sort()).toEqual(['cluster-a-production', 'cluster-b-production', 'empty-production'])
+  expect(await ui.find({ type: 'Text', text: /▰▰▰▰▰▰▰▰ 2\/2/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /▱▱▱▱▱▱▱▱ 0\/1/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /▱▱▱▱▱▱▱▱ 0\/0/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /CHECK/ })).toBeDefined()
+  await ui.unmount()
 })
