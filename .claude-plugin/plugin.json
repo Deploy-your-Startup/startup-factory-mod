@@ -1,8 +1,10 @@
 {
   "name": "startup-factory",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Live dashboard of every startup and tooling repo in the startup-factory registry",
-  "author": { "name": "Philipp Lein" },
+  "author": {
+    "name": "Philipp Lein"
+  },
   "repository": "https://github.com/philipp-lein/startup-factory-mod",
   "types": "./types/index.d.ts"
 }
