@@ -1,7 +1,6 @@
 # startup-factory-mod
 
-A Claude Code mod that turns the [startup-factory](https://github.com/philipp-lein/startup-factory)
-hub into a live dashboard: one pane with every startup and tooling repo from `projects.yaml`.
+A Claude Code mod that turns a factory workspace into a live dashboard: one pane with every startup and tooling repo from `projects.yaml`.
 
 - **Tiles**: live, in progress, dirty checkouts, problems
 - **Cards for live startups**: website status and response time (`url:`), pod health
@@ -11,27 +10,30 @@ hub into a live dashboard: one pane with every startup and tooling repo from `pr
 - Git is re-read every 2 minutes and after each Claude turn; website and cluster
   checks run on open and with the **⚡ Checks** button
 
-The pane opens by itself in a session started in the startup-factory folder
+The pane opens by itself in a session started in a factory workspace (any folder with a `projects.yaml`)
 (from 144 terminal columns), or with `/factory`.
 
 ## Install
 
-Inside the startup-factory repo nothing is needed: its `.claude/settings.json`
-enables the mod. Anywhere else, at a Claude Code prompt:
+Workspaces created from
+[startup-factory-template](https://github.com/Deploy-your-Startup/startup-factory-template)
+enable the mod in their `.claude/settings.json`; Claude Code offers to install it when
+you trust the folder. Anywhere else, at a Claude Code prompt:
 
 ```
-/plugin install startup-factory --marketplace philipp-lein/startup-factory-mod
+/plugin marketplace add Deploy-your-Startup/startup-factory-mod
+/plugin install startup-factory@startup-factory-mod
 ```
 
 ## Registry fields it reads
 
 ```yaml
 projects:
-  - name: about-phil
-    repo: git@github.com:philipp-lein/about-phil.git
+  - name: example-app
+    repo: https://github.com/example-owner/example-app.git
     deployed: true                         # card in the "Live" section
-    kubectl_context: about-phil-production # pod check in this context’s namespace
-    url: aboutphil.de                      # website check + link
+    kubectl_context: example-app-production # pod check in this context’s namespace
+    url: app.example.com                      # website check + link
 ```
 
 Pod checks use the namespace configured in each Kubernetes context (or `default`
