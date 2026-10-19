@@ -208,13 +208,13 @@ async function showStatus($: EngineInterface): Promise<void> {
 
 function ago(ms: number): string {
   const minutes = Math.max(0, Math.round(ms / 60_000))
-  if (minutes < 1) return 'gerade eben'
-  if (minutes < 60) return `vor ${minutes} min`
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes} min ago`
   const hours = Math.round(minutes / 60)
-  if (hours < 24) return `vor ${hours} Std`
+  if (hours < 24) return `${hours} h ago`
   const days = Math.round(hours / 24)
-  if (days < 30) return `vor ${days} ${days === 1 ? 'Tag' : 'Tagen'}`
-  return `vor ${Math.round(days / 30)} Mon`
+  if (days < 30) return `${days} ${days === 1 ? 'day' : 'days'} ago`
+  return `${Math.round(days / 30)} mo ago`
 }
 
 function bar(running: number, total: number, cells = 8): string {
@@ -247,7 +247,7 @@ export const register: Register = on => {
     const started = await next(e)
     await $.command.register({
       name: 'factory',
-      description: 'Startup-Factory-Dashboard öffnen (alle Startups und ihr Zustand)',
+      description: 'Open the startup factory dashboard (all startups and their state)',
     })
     if ((await findRoot($)) !== null) {
       void $.ui.open({ id: PANE, title: TITLE })
@@ -260,7 +260,7 @@ export const register: Register = on => {
   on('command.run', { command: 'factory' }, async $ => {
     await $.ui.open({ id: PANE, title: TITLE })
     void refresh($).then(() => runChecks($))
-    return { text: 'Startup-Factory-Dashboard geöffnet.' }
+    return { text: 'Startup factory dashboard opened.' }
   })
 
   // Claude often commits, pulls or deploys during a turn: re-read git after each.
@@ -280,7 +280,7 @@ export const register: Register = on => {
       p.repo ? <Link href={p.repo}>{p.name}</Link> : <Text bold={bold}>{p.name}</Text>
 
     const gitLine = (p: Project) => {
-      if (!p.isCloned) return <Text dimColor italic>nicht geklont</Text>
+      if (!p.isCloned) return <Text dimColor italic>not cloned</Text>
       return (
         <Box flexDirection="row" gap={1}>
           <Text color="suggestion">⎇ {p.branch ?? '?'}</Text>
@@ -303,8 +303,8 @@ export const register: Register = on => {
           </Text>
         )
       }
-      if (c.state === 'checking') return <Text color="claude">◌ prüfe Cluster…</Text>
-      if (c.state === 'error') return <Text color="error">✗ Cluster nicht erreichbar</Text>
+      if (c.state === 'checking') return <Text color="claude">◌ checking cluster…</Text>
+      if (c.state === 'error') return <Text color="error">✗ cluster unreachable</Text>
       return <Text dimColor>☸ {p.context}</Text>
     }
 
@@ -427,7 +427,7 @@ export const register: Register = on => {
             🏭 STARTUP FACTORY
           </Text>
           <Text dimColor>
-            {b.isBusy ? '◌ lädt…' : b.refreshedAt !== null ? `↻ ${ago(now - b.refreshedAt)}` : ''}
+            {b.isBusy ? '◌ loading…' : b.refreshedAt !== null ? `↻ ${ago(now - b.refreshedAt)}` : ''}
           </Text>
         </Box>
 
@@ -448,7 +448,7 @@ export const register: Register = on => {
 
         {live.length > 0 && heading('🚀', 'Live', `${live.length}/${startups.length}`)}
         {live.map(card)}
-        {building.length > 0 && heading('🧪', 'In Arbeit', String(building.length))}
+        {building.length > 0 && heading('🧪', 'Building', String(building.length))}
         {building.map(line)}
         {tooling.length > 0 && heading('🛠', 'Tooling', String(tooling.length))}
         {tooling.map(line)}

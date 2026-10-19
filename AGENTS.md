@@ -9,8 +9,7 @@ Claude Code mod (function-hooks plugin) that renders the startup-factory dashboa
 
 ## Rules
 
-- **Integration tests are the default.** Unit tests are reserved for complex
-  algorithms and supplement integration/E2E coverage. Test through the engine with
+- Test through the engine with
   `claude-code/testing` (`$.ui.mount` the Pane, answer `fs`, `process.run`,
   `http.fetch` beneath the plugin).
 - Before committing: run `claude plugin validate .` and the portable policy
@@ -25,10 +24,5 @@ Claude Code mod (function-hooks plugin) that renders the startup-factory dashboa
 
 ## Test coverage and completion claims
 
-Follow [Testing policy and completion evidence](docs/testing-policy.md).
-Integration tests are the default; changed user flows require E2E coverage.
-Unit tests are reserved for complex algorithms and never replace these checks.
-Use GIVEN / WHEN / THEN, real application interfaces and independent fixtures.
-A green pipeline confirms the executed checks, not complete feature coverage.
-Record uncovered flows and report skipped provider checks and remaining gaps.
-Keep required E2E checks enabled when improving speed.
+Follow [Testing policy and completion evidence](docs/testing-policy.md); report
+skipped engine checks and remaining gaps.
