@@ -2,21 +2,21 @@ import { expect, mock, test } from 'claude-code/testing'
 
 const ROOT = '/factory'
 const REGISTRY = `projects:
-  - name: about-phil
-    repo: git@github.com:philipp-lein/about-phil.git
+  - name: example-app
+    repo: git@github.com:example-owner/example-app.git
     deployed: true
-    kubectl_context: about-phil-production
-    url: aboutphil.de
+    kubectl_context: example-app-production
+    url: app.example.com
 
-  - name: my-mmo
-    repo: git@github.com:philipp-lein/my-mmo.git
+  - name: demo-game
+    repo: git@github.com:example-owner/demo-game.git
 
 tooling:
   - name: cli
     repo: git@github.com:Deploy-your-Startup/cli.git
     description: "startup CLI Quellcode"
 `
-const CLONED = [`${ROOT}/projects.yaml`, `${ROOT}/projects/startups/about-phil/.git`]
+const CLONED = [`${ROOT}/projects.yaml`, `${ROOT}/projects/startups/example-app/.git`]
 const PANE = { component: 'Pane', requestId: 'startup-factory' } as const
 
 const RUN = { isStdoutTruncated: false, isStderrTruncated: false }
@@ -62,7 +62,7 @@ test('the pane lists startups with git and cluster state', async ($, on) => {
     expect(await ui.find({ type: 'Text', text: /CHECK/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /nicht geklont/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /▰▰▰▰▱▱▱▱ 1\/2/ })).toBeDefined()
-    expect(await ui.find({ text: /aboutphil\.de/ })).toBeDefined()
+    expect(await ui.find({ text: /app\.example\.com/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /200 · 0 ms/ })).toBeDefined()
     await ui.unmount()
   }

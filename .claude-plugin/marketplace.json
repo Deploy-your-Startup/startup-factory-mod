@@ -2,7 +2,7 @@
   "name": "startup-factory-mod",
   "description": "Claude Code mods for the startup factory",
   "owner": {
-    "name": "Philipp Lein"
+    "name": "Deploy-your-Startup"
   },
   "plugins": [
     {

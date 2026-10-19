@@ -5,6 +5,6 @@
   "author": {
     "name": "Philipp Lein"
   },
-  "repository": "https://github.com/philipp-lein/startup-factory-mod",
+  "repository": "https://github.com/Deploy-your-Startup/startup-factory-mod",
   "types": "./types/index.d.ts"
 }
