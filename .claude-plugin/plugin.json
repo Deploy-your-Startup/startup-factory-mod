@@ -1,6 +1,6 @@
 {
   "name": "startup-factory",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Live dashboard of every startup and tooling repo in the startup-factory registry",
   "author": {
     "name": "Philipp Lein"
