@@ -1,10 +1,18 @@
 {
   "name": "startup-factory",
-  "version": "0.2.4",
-  "description": "Live dashboard of every startup and tooling repo in the startup-factory registry",
+  "version": "0.3.0",
+  "description": "Live dashboard of every startup and tooling repo in the startup-factory registry, with a factory look for the desktop and mobile apps",
   "author": {
     "name": "Philipp Lein"
   },
   "repository": "https://github.com/Deploy-your-Startup/startup-factory-mod",
-  "types": "./types/index.d.ts"
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "theme": {
+      "type": "boolean",
+      "title": "Factory look",
+      "description": "Paint factory workspaces in the Startup Factory theme (steel, safety orange, blueprint grid) in the desktop and mobile apps",
+      "default": true
+    }
+  }
 }

@@ -1,7 +1,9 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, Register, ThemeSetArgs } from 'claude-code'
 
 import type { Board, Cluster, Project, Site } from '../types'
+import { makeColors } from './make-colors.js'
+import { FACTORY_SCENE, SCENE, SCENE_ALT } from './scene'
 
 const PANE = 'startup-factory'
 const TITLE = 'Startup Factory'
@@ -9,6 +11,59 @@ const GIT_EVERY_MS = 2 * 60 * 1000
 
 const EMPTY: Board = { root: null, projects: [], refreshedAt: null, isBusy: false }
 const board = atom({ plugin: 'startup-factory', key: 'board' } as const, EMPTY)
+
+// The factory look: brushed steel with safety orange, over the factory floor
+// that hooks/scene.ts draws.
+// Day is the drafting table, night is the shop floor after hours.
+const { theme: FACTORY_COLORS, problems: FACTORY_PROBLEMS } = makeColors({
+  label: 'Startup Factory',
+  roles: { accent: '#e8590c', danger: '#c92a2a', success: '#2b8a3e', warning: '#d49a00', pro: '#5f6fd6' },
+  light: {
+    gray: {
+      anchors: {
+        'surface-0': '#e3e7eb',
+        'surface-1': '#eceff2',
+        'surface-2': '#f5f7f9',
+        'text-primary': '#1a2129',
+        'text-secondary': '#3d4852',
+        'text-muted': '#55616d',
+      },
+    },
+  },
+  dark: {
+    gray: {
+      anchors: {
+        'surface-0': '#14181d',
+        'surface-1': '#1a2026',
+        'surface-2': '#20272e',
+        'surface-3': '#252d35',
+        'text-primary': '#e8edf2',
+        'text-secondary': '#c2cbd4',
+        'text-muted': '#9ba7b3',
+      },
+    },
+  },
+})
+
+const FACTORY_LOOK: ThemeSetArgs = {
+  colors: FACTORY_COLORS,
+  // Panels stay frosted enough to read on; the works show between them.
+  backdrop: { scene: SCENE, glass: { blur: 6, opacity: 0.72 } },
+}
+
+// Background work outlives the hook that started it (a reload, a session's
+// end): a refusal then is nobody's to handle.
+function quietly(work: Promise<unknown>): void {
+  void work.catch(() => undefined)
+}
+
+async function paint($: EngineInterface): Promise<void> {
+  try {
+    await $.theme.set(FACTORY_LOOK)
+  } catch {
+    // No $.theme on this engine: keep the app's own look.
+  }
+}
 
 type Entry = Record<string, string>
 
@@ -124,9 +179,19 @@ function hostOf(url: string): string {
   return url.replace(/^https?:\/\//, '').replace(/\/$/, '')
 }
 
+// A session often starts inside one of the factory's repositories
+// (projects/tooling/<name>), so the registry is looked for upward too.
+const ROOT_DEPTH = 4
+
 async function findRoot($: EngineInterface): Promise<string | null> {
-  for (const dir of [await $.session.root(), await $.session.cwd()]) {
-    if (await $.fs.exists(`${dir}/projects.yaml`)) return dir
+  const seen = new Set<string>()
+  for (const start of [await $.session.root(), await $.session.cwd()]) {
+    let dir = start.replace(/\/+$/, '')
+    for (let depth = 0; depth <= ROOT_DEPTH && dir !== '' && !seen.has(dir); depth += 1) {
+      seen.add(dir)
+      if (await $.fs.exists(`${dir}/projects.yaml`)) return dir
+      dir = dir.slice(0, Math.max(0, dir.lastIndexOf('/')))
+    }
   }
   return null
 }
@@ -139,7 +204,7 @@ async function refresh($: EngineInterface): Promise<void> {
   try {
     const root = await findRoot($)
     if (root === null) {
-      await update($, board, b => ({ ...b, root: null, error: 'Keine projects.yaml in diesem Projekt gefunden.' }))
+      await update($, board, b => ({ ...b, root: null, error: 'No projects.yaml found in this workspace.' }))
       return
     }
     const registry = parseRegistry(await $.fs.read(`${root}/projects.yaml`))
@@ -242,7 +307,7 @@ function health(p: Project): Health {
 const HEALTH_COLOR = { ok: 'success', warn: 'warning', bad: 'error', idle: 'subtle' } as const
 const HEALTH_RANK = { bad: 0, warn: 1, ok: 2, idle: 3 } as const
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     const started = await next(e)
     await $.command.register({
@@ -250,24 +315,37 @@ export const register: Register = on => {
       description: 'Open the startup factory dashboard (all startups and their state)',
     })
     if ((await findRoot($)) !== null) {
+      if (options.theme !== false) {
+        const unpainted = FACTORY_PROBLEMS.find(line => line.startsWith("Desktop won't paint"))
+        if (unpainted !== undefined) $.ui.toast(unpainted)
+        // The terminal and editors draw no look, and an engine older than
+        // looks has no $.theme at all: the dashboard opens either way.
+        void paint($)
+      }
       void $.ui.open({ id: PANE, title: TITLE })
-      void refresh($).then(() => runChecks($))
-      $.clock.every(GIT_EVERY_MS, () => void refresh($))
+      quietly(refresh($).then(() => runChecks($)))
+      $.clock.every(GIT_EVERY_MS, () => quietly(refresh($)))
     }
     return started
   })
 
   on('command.run', { command: 'factory' }, async $ => {
     await $.ui.open({ id: PANE, title: TITLE })
-    void refresh($).then(() => runChecks($))
+    quietly(refresh($).then(() => runChecks($)))
     return { text: 'Startup factory dashboard opened.' }
   })
 
   // Claude often commits, pulls or deploys during a turn: re-read git after each.
   on('turn.complete', async ($, e, next) => {
     const done = await next(e)
-    if ((await read($, board)).root !== null) void refresh($)
+    if ((await read($, board)).root !== null) quietly(refresh($))
     return done
+  })
+
+  on('ui.render', { component: 'Backdrop' }, ($, e, next) => {
+    if (e.props.scene !== SCENE || (e.surface !== 'desktop' && e.surface !== 'mobile')) return next(e)
+    const { Svg } = $.ui.resolve(e)
+    return <Svg source={FACTORY_SCENE} alt={SCENE_ALT} isInteractive />
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
@@ -418,7 +496,25 @@ export const register: Register = on => {
     const building = startups.filter(p => !isLive(p))
     const tooling = b.projects.filter(p => p.kind === 'tooling')
     const dirty = b.projects.filter(p => (p.dirty ?? 0) > 0).length
-    const issues = b.projects.filter(p => health(p) === 'bad' || health(p) === 'warn').length
+    const down = b.projects.filter(p => health(p) === 'bad').length
+    const issues = down + b.projects.filter(p => health(p) === 'warn').length
+
+    // Minimized on the desktop app: the numbers alone, no controls.
+    if (e.props.placement === 'widget') {
+      return (
+        <Box flexDirection="column" paddingX={1}>
+          <Text bold color="claude">
+            🏭 {live.length}/{startups.length} live
+          </Text>
+          <Box flexDirection="row" gap={1}>
+            {down > 0 && <Text color="error">⚠ {down} down</Text>}
+            {issues - down > 0 && <Text color="warning">{issues - down} to check</Text>}
+            {dirty > 0 && <Text color="warning">✎ {dirty} dirty</Text>}
+            {issues === 0 && dirty === 0 && <Text color="success">✓ all clear</Text>}
+          </Box>
+        </Box>
+      )
+    }
 
     return (
       <Box flexDirection="column">
@@ -433,18 +529,18 @@ export const register: Register = on => {
 
         <Box flexDirection="row" gap={1}>
           {tile('t-live', live.length, 'live', 'success')}
-          {tile('t-build', building.length, 'in Arbeit', 'suggestion')}
+          {tile('t-build', building.length, 'building', 'suggestion')}
           {tile('t-dirty', dirty, 'dirty', 'warning')}
-          {tile('t-issues', issues, 'Probleme', 'error')}
+          {tile('t-issues', issues, 'issues', 'error')}
         </Box>
 
         <Box flexDirection="row" gap={1} marginTop={1}>
-          <Button key="refresh" label="↻ Aktualisieren" onPress={() => void refresh($)} />
+          <Button key="refresh" label="↻ Refresh" onPress={() => void refresh($)} />
           <Button key="clusters" label="⚡ Checks" onPress={() => void runChecks($)} />
         </Box>
 
         {b.error && <Text color="error">{b.error}</Text>}
-        {b.projects.length === 0 && !b.error && <Text dimColor>Lese Registry…</Text>}
+        {b.projects.length === 0 && !b.error && <Text dimColor>Reading registry…</Text>}
 
         {live.length > 0 && heading('🚀', 'Live', `${live.length}/${startups.length}`)}
         {live.map(card)}
