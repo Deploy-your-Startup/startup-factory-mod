@@ -220,7 +220,7 @@ test('the backdrop is the factory floor, drawn where a look draws', async ($, on
     const { Text } = $.ui.resolve(e)
     return <Text>engine</Text>
   })
-  const props = { scene: 'factory-floor', plugin: 'startup-factory', glass: { blur: 6, opacity: 0.72 } }
+  const props = { scene: 'factory-floor', plugin: 'startup-factory', glass: { blur: 10, opacity: 0.82 } }
 
   for (const surface of ['desktop', 'mobile'] as const) {
     const ui = await $.ui.mount({ plugin: 'startup-factory', surface, component: 'Backdrop', props })

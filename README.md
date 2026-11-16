@@ -11,9 +11,9 @@ A Claude Code mod that turns a factory workspace into a live dashboard: one pane
   checks run on open and with the **⚡ Checks** button
 - **Widget**: minimized in the desktop app, the pane shrinks to the numbers alone
 - **Factory look**: in the desktop and mobile apps a factory workspace is painted in
-  brushed steel and safety orange, in light and dark mode, over a moving factory floor
-  (`hooks/scene.ts`): a works skyline with smoking chimneys, a conveyor and turning
-  gears on a blueprint grid. Turn it
+  brushed steel and safety orange, in light and dark mode, over a faint factory floor
+  (`hooks/scene.ts`): a works skyline with chimneys, a conveyor and gears on a
+  blueprint grid. Slow chimney smoke is the only thing that moves. Turn it
   off with the mod's `theme` option. The terminal and editors keep their own look.
 
 The pane opens by itself in a session started in a factory workspace: a folder with a

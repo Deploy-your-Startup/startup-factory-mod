@@ -48,7 +48,7 @@ const { theme: FACTORY_COLORS, problems: FACTORY_PROBLEMS } = makeColors({
 const FACTORY_LOOK: ThemeSetArgs = {
   colors: FACTORY_COLORS,
   // Panels stay frosted enough to read on; the works show between them.
-  backdrop: { scene: SCENE, glass: { blur: 6, opacity: 0.72 } },
+  backdrop: { scene: SCENE, glass: { blur: 10, opacity: 0.82 } },
 }
 
 // Background work outlives the hook that started it (a reload, a session's
