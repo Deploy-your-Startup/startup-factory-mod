@@ -2,7 +2,9 @@
 
 Claude Code mod (function-hooks plugin) that renders the startup-factory dashboard.
 
-- `hooks/register.tsx` — the hooks module: registry parsing, git/kubectl/http checks, the `Pane` render
+- `hooks/register.tsx` — the hooks module: registry parsing, git/kubectl/http checks, the `Pane` render, the factory look
+- `hooks/scene.ts` — the factory-floor backdrop, one generated SVG; keep it faint and nearly still
+- `hooks/make-colors.*` — palette builder copied unchanged from Claude Code's `plugin-authoring` skill; never edit
 - `types/index.d.ts` — the `$.state` contract (`startup-factory.board`)
 - `hooks/*.test.tsx` — tests run by `claude plugin test .`
 - `.claude-plugin/marketplace.json` — makes this repo its own marketplace
